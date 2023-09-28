@@ -3,8 +3,6 @@ import random
 from fractions import Fraction
 import re
 
-ture = 0
-
 # 定义运算符和运算符的权重
 operators = ['+', '-', '*', '/']  # 使用 * 代替 ×，/ 代替 ÷
 operator_weights = [2, 2, 1, 1]
@@ -14,7 +12,6 @@ parser = argparse.ArgumentParser(description='Generate elementary school arithme
 parser.add_argument('-n', type=int, required=True, help='Number of problems to generate')
 parser.add_argument('-r', type=int, required=True, help='Range of numbers (0 to r)')
 args = parser.parse_args()
-
 
 # 生成算术表达式
 def generate_expression(min_num, max_num, max_depth):
@@ -27,22 +24,11 @@ def generate_expression(min_num, max_num, max_depth):
         # 对于加、减、乘、除运算，生成两个子表达式并组合它们
         left_expr = generate_expression(min_num, max_num, max_depth - 1)
         right_expr = generate_expression(min_num, max_num, max_depth - 1)
-
-        try:
-            eval(right_expr)
-            eval(left_expr)
-        except ZeroDivisionError:
-            print("除数为零异常发生，重新生成题目。")
-            global ture
-            ture = 1
-            return
-
-        if operator == '-':
-            if eval(left_expr) < eval(right_expr):
-                translation = left_expr
-                left_expr = right_expr
-                right_expr = translation
-
+        if operator == '-' and left_expr < right_expr:  # 没修成功
+            print("1a")
+            translation = left_expr
+            left_expr = right_expr
+            right_expr = translation
     else:
         print("2b")
         # 对于自定义运算（如除法确保结果是真分数），生成一个子表达式
@@ -55,16 +41,11 @@ def generate_expression(min_num, max_num, max_depth):
 
     return f'({left_expr} {operator} {right_expr})'
 
-
 # 生成题目和答案
 problems = []
 answers = []
-for i in range(args.n):
-    ture = 0
+for _ in range(args.n):
     expression = generate_expression(0, args.r, 2)
-    if ture == 1:
-        i = i-1
-        break
     try:
         # 使用 eval() 计算表达式并将结果转换为真分数
         improper_fraction = Fraction(eval(expression)).limit_denominator()
