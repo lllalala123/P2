@@ -15,29 +15,28 @@ operator_weights = [2, 2, 1, 1]
 # 函数定义
 # 1、生成算术表达式
 def generate_expression(min_num, max_num, max_depth):
-    # 递归到第0层的时候，生成一个数字，并以字符串的形式传回去
-    if max_depth == 0:
+    if max_depth == 0:  # 递归深度为零，直接返回一个随机数。
         return str(random.randint(min_num, max_num))
 
-    # 引用全局变量ture
     global ture
+    # 随机选择一个运算符
     operator = random.choices(operators, weights=operator_weights)[0]
 
-    # 对于加、减、乘、除运算，生成两个子表达式并组合它们
+    # 对于加、减、乘、除运算，递归生成两个子表达式并组合它们
     left_expr = generate_expression(min_num, max_num, max_depth - 1)
     right_expr = generate_expression(min_num, max_num, max_depth - 1)
-    if ture == 1:
+    if ture == 1:  # 上一层递归已经出现了除零报错的时候直接返回
         return
-    if operator == '/':
+    if operator == '/':  # 检查本层递归是否出现除零报错
         try:
             x = f'({left_expr} {operator} {right_expr})'
             eval(x)
         except ZeroDivisionError:
-            print("出错，重新生成题目。")
+            # print("出错，重新生成题目。")
             ture = 1
             return
 
-    if operator == '-':
+    if operator == '-':  # 当被减数小于减数时，交换两个数字的值，保持被减数大于减数
         if eval(left_expr) < eval(right_expr):
             translation = left_expr
             left_expr = right_expr
@@ -62,7 +61,7 @@ def read_answers(filename):
         return [line.strip().split('. ')[1] for line in file.readlines() if line.strip()]
 
 
-# 4、对比答案是否正确            (改：problems, answers--》problems_check, answers_check)
+# 4、对比答案是否正确
 def check_answers(problems_check, answers_check):
     correct_indices_check = []  # 存储正确答案的索引
     wrong_indices_check = []    # 存储错误答案的索引
@@ -71,7 +70,6 @@ def check_answers(problems_check, answers_check):
         # 假设答案文件中每行只包含一个答案
         problem_c = problem_c.strip()
         answer_c = answer_c.strip()
-        print("正确的计算结果：", Fraction(eval(problem_c)).limit_denominator())
 
         # 在这里进行答案判定，根据题目和答案的格式来编写具体判定逻辑
         # 这里简单地假设如果题目和答案一致，则判定为正确，否则为错误
@@ -117,47 +115,30 @@ def process_answer(answer_in):
 
 # 主程序
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Generate random numbers and check two txt files.")
-    parser.add_argument("--generate", action="store_true", help="Generate random numbers.")
-    parser.add_argument("--check", action="store_true", help="Check two txt files.")
-    parser.add_argument("-n", type=int, help="Number of random numbers to generate.")
-    parser.add_argument("-r", type=int, help="Range for random numbers.")
-    parser.add_argument("-e", type=str, help="First txt file for checking.")
-    parser.add_argument("-a", type=str, help="Second txt file for checking.")
+    parser = argparse.ArgumentParser(description="生成四则运算题目和答案的功能 与 核对四则运算答案结果的功能")
+    parser.add_argument("-n", type=int, help="生成题目的数量为n个")
+    parser.add_argument("-r", type=int, help="生成随机数的范围是在区间[0,r]")
+    parser.add_argument("-e", type=str, help="题目文件")
+    parser.add_argument("-a", type=str, help="答案文件")
     args = parser.parse_args()
 
-    # parser.add_argument("--filename", type=str, default="random_numbers.txt",
-    # help="Specify the filename for writing (default: random_numbers.txt)")
-
-    # parser = argparse.ArgumentParser(description="Generate random numbers and write to a txt file.")
-    # parser.add_argument("--generate", action="store_true", help="Generate random numbers.")
-    # parser.add_argument("--check", type=str, help="Write numbers to a txt file.")
-    # parser.add_argument("--filename", type=str, default="random_numbers.txt",
-    #                     help="Specify the filename for writing (default: random_numbers.txt)")
-    # parser = argparse.ArgumentParser(description='Check and grade exercise answers.')
-    # parser.add_argument('-e', type=str, required=True, help='Exercise file (Exercises.txt)')
-    # parser.add_argument('-a', type=str, required=True, help='Answer file (Answers.txt)')
-    #
-    # # 命令行参数解析
-    # parser = argparse.ArgumentParser(description='Generate elementary school arithmetic problems.')
-    # parser.add_argument('-n', type=int, required=True, help='Number of problems to generate')
-    # parser.add_argument('-r', type=int, required=True, help='Range of numbers (0 to r)')
+    # parser.add_argument('-e', type=str, required=True, help='题目文件')
 
     if (args.n or args.r) and (args.e is None and args.a is None):
         if args.n is None or args.r is None:
-            print("生成题目格式错误，请输入正确格式：main.exe -n 10 -r 10")
+            print("生成题目格式错误，请输入正确格式：main.exe -n <生成题目数量> -r <数字取值范围>")
         else:
             # 生成题目和答案
             problems = []
             answers = []
             for i in range(args.n):
                 expression = generate_expression(0, args.r, 2)
-                while ture == 1 or (expression in problems):
+                while ture == 1 or (expression in problems):  # 如果出现除零报错或者表达式重复，则进入循环并重新生成表达式
                     ture = 0
                     expression = generate_expression(0, args.r, 2)
                 # 使用 eval() 计算表达式并将结果转换为真分数
                 improper_fraction = Fraction(eval(expression)).limit_denominator()
-                # 使用 divmod 将假分数转化为带分数
+                # 使用 div_mod 将假分数转化为带分数
                 whole_part, remainder = divmod(improper_fraction.numerator, improper_fraction.denominator)
                 fraction = Fraction(eval(expression)).limit_denominator() - Fraction(whole_part)  # 得到分数部分
                 # 将带分数格式化为字符串形式
@@ -182,11 +163,11 @@ if __name__ == "__main__":
                 for i, answer in enumerate(answers, start=1):
                     answers_file.write(f'{i}. {answer}\n')
 
-            print(f'Generated {args.n} problems in Exercises.txt and Answers.txt.')
+            print(f'已经生成了{args.n}个问题，并计算答案，分别存储在Exercises.txt和Answers.txt中.')
     # 检查部分
     elif (args.e or args.a) and (args.n is None and args.r is None):
         if args.e is None or args.a is None:
-            print("生成题目格式错误，请输入正确格式：main.exe -e <题目文件路径> -a <答案文件路劲>")
+            print("生成题目格式错误，请输入正确格式：main.exe -e <题目文件路径> -a <答案文件路径>")
         else:
             # 读取题目和答案数据
             problems = read_problems(args.e)
@@ -207,5 +188,5 @@ if __name__ == "__main__":
 
     else:
         print("输入格式错误")
-        print("生成题目的正确格式：main.exe -n 10 -r 10")
-        print("核对答案的正确格式：main.exe -e <题目文件路径> -a <答案文件路劲>")
+        print("生成题目的正确格式：main.exe -n <生成题目数量> -r <数字取值范围>")
+        print("核对答案的正确格式：main.exe -e <题目文件路径> -a <答案文件路径>")
